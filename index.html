@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>俄罗斯方块 - 20种玩法</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow-y: auto;
+    user-select: none;
+  }
+  .game-wrapper {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 165px;
+  }
+  .panel {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+    color: #e6e6e6;
+  }
+  .panel h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    color: #a0a0b0;
+  }
+  #scoreVal, #linesVal, #levelVal, #timerVal {
+    font-size: 26px;
+    font-weight: bold;
+    color: #e94560;
+  }
+  #timerVal { color: #f5c542; }
+  canvas#gameCanvas {
+    border: 2px solid #0f3460;
+    border-radius: 6px;
+    background: #0a0a1a;
+    display: block;
+  }
+  canvas#nextCanvas {
+    border: 1px solid #0f3460;
+    border-radius: 6px;
+    background: #0a0a1a;
+    display: block;
+    margin: 0 auto;
+  }
+  #modeSelect {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #1a1a3e;
+    color: #e6e6e6;
+    border: 1px solid #0f3460;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+  }
+  #modeSelect option { background: #1a1a3e; color: #e6e6e6; }
+  #modeSelect:focus { border-color: #e94560; }
+  #modeDesc { font-size: 12px; color: #4ecca3; }
+  .controls { font-size: 11px; color: #a0a0b0; line-height: 1.8; }
+  .controls kbd {
+    background: #1a1a3e;
+    border: 1px solid #0f3460;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: #e94560;
+    font-family: inherit;
+  }
+  .btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 8px 0;
+    background: #e94560;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #c73e54; }
+  .btn.secondary { background: #0f3460; }
+  .btn.secondary:hover { background: #1a4a80; }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 30px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #overlayMsg {
+    background: rgba(0,0,0,0.85);
+    color: #e94560;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 14px 40px;
+    border-radius: 10px;
+    display: none;
+    border: 2px solid #e94560;
+    text-align: center;
+  }
+  .powerup-ind {
+    color: #f5c542;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 4px;
+    min-height: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="game-wrapper">
+  <div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="powerup-ind" id="powerupInd"></div>
+  </div>
+  <div class="sidebar">
+    <div class="panel">
+      <h3>玩法选择</h3>
+      <select id="modeSelect"></select>
+      <div id="modeDesc" style="margin-top:6px;"></div>
+    </div>
+    <div class="panel">
+      <h3>下一个</h3>
+      <canvas id="nextCanvas" width="110" height="110"></canvas>
+    </div>
+    <div class="panel">
+      <h3>分数</h3>
+      <div id="scoreVal">0</div>
+    </div>
+    <div class="panel">
+      <h3>行数</h3>
+      <div id="linesVal">0</div>
+    </div>
+    <div class="panel">
+      <h3>等级</h3>
+      <div id="levelVal">1</div>
+    </div>
+    <div class="panel" id="timerPanel" style="display:none;">
+      <h3>剩余时间</h3>
+      <div id="timerVal">120</div>
+    </div>
+    <div class="panel controls">
+      <h3>操作</h3>
+      <div><kbd>←</kbd><kbd>→</kbd> 移动 &nbsp; <kbd>↓</kbd> 下落</div>
+      <div><kbd>Enter</kbd> 变形 &nbsp; <kbd>↑</kbd> 落底</div>
+      <button class="btn" id="pauseBtn">暂停 (P)</button>
+      <button class="btn secondary" id="restartBtn">重新开始</button>
+    </div>
+  </div>
+</div>
+<div id="overlay"><div id="overlayMsg"></div></div>
+
+<script>
+// ── constants ──
+let COLS = 10, ROWS = 20, BLOCK = 30;
+const COLORS = ['#111','#e94560','#f5c542','#4ecca3','#3498db','#9b59b6','#e67e22','#2ecc71','#888'];
+const SHAPES = [
+  [[1,1,1,1]],                   // I
+  [[1,1],[1,1]],                 // O
+  [[0,1,0],[1,1,1]],            // T
+  [[1,0,0],[1,1,1]],            // L
+  [[0,0,1],[1,1,1]],            // J
+  [[0,1,1],[1,1,0]],            // S
+  [[1,1,0],[0,1,1]],            // Z
+];
+
+// ── mode definitions ──
+const MODES = [
+  { id:0,  name:'经典模式',     desc:'标准俄罗斯方块',        baseSpeed:800,  speedDec:60 },
+  { id:1,  name:'极速模式',     desc:'初始下落极快',          baseSpeed:200,  speedDec:20 },
+  { id:2,  name:'地狱模式',     desc:'极快+加速极猛',         baseSpeed:180,  speedDec:55 },
+  { id:3,  name:'障碍模式',     desc:'随机不可消障碍块',      baseSpeed:800,  speedDec:60, obstacles:true },
+  { id:4,  name:'炸弹模式',     desc:'方块落底炸掉周围',      baseSpeed:800,  speedDec:60, bombs:true },
+  { id:5,  name:'隐形模式',     desc:'已放方块逐渐消失',      baseSpeed:800,  speedDec:60, invisible:true },
+  { id:6,  name:'无旋转',       desc:'不能变形纯拼预判',      baseSpeed:800,  speedDec:60, norotate:true },
+  { id:7,  name:'突变模式',     desc:'方块可能随机变形状',    baseSpeed:800,  speedDec:60, scramble:true },
+  { id:8,  name:'冰面模式',     desc:'左右移动直接滑到底',    baseSpeed:800,  speedDec:60, ice:true },
+  { id:9,  name:'左右反转',     desc:'方向键左右互换',        baseSpeed:800,  speedDec:60, mirror:true },
+  { id:10, name:'大棋盘',       desc:'15x25超大棋盘',         baseSpeed:800,  speedDec:60, bigboard:true },
+  { id:11, name:'窄棋盘',       desc:'6列窄小棋盘',           baseSpeed:800,  speedDec:60, narrow:true },
+  { id:12, name:'计时挑战',     desc:'2分钟刷最高分',         baseSpeed:700,  speedDec:50, timed:120 },
+  { id:13, name:'极简模式',     desc:'只用O和I方块',          baseSpeed:800,  speedDec:60, shapes:[0,1] },
+  { id:14, name:'连击天堂',     desc:'连续消行分倍累计',      baseSpeed:800,  speedDec:60, combo:true },
+  { id:15, name:'双倍速',       desc:'每10行速度翻倍',        baseSpeed:800,  speedDec:60, doublespeed:true },
+  { id:16, name:'黑暗模式',     desc:'只看见周围3格',         baseSpeed:800,  speedDec:60, dark:true },
+  { id:17, name:'彩虹模式',     desc:'方块颜色随机',          baseSpeed:800,  speedDec:60, rainbow:true },
+  { id:18, name:'幸运模式',     desc:'下落可能触发道具',      baseSpeed:800,  speedDec:60, lucky:true },
+  { id:19, name:'弹跳模式',     desc:'落地弹起再落下才定',    baseSpeed:800,  speedDec:60, bounce:true },
+];
+
+// ── DOM refs ──
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const ncanvas = document.getElementById('nextCanvas');
+const nctx = ncanvas.getContext('2d');
+const modeSelect = document.getElementById('modeSelect');
+const modeDescEl = document.getElementById('modeDesc');
+const scoreEl = document.getElementById('scoreVal');
+const linesEl = document.getElementById('linesVal');
+const levelEl = document.getElementById('levelVal');
+const timerEl = document.getElementById('timerVal');
+const timerPanel = document.getElementById('timerPanel');
+const overlayMsg = document.getElementById('overlayMsg');
+const pauseBtn = document.getElementById('pauseBtn');
+const powerupInd = document.getElementById('powerupInd');
+
+// populate mode selector
+MODES.forEach((m,i) => {
+  const o = document.createElement('option');
+  o.value = m.id;
+  o.textContent = (i+1) + '. ' + m.name;
+  modeSelect.appendChild(o);
+});
+
+// ── game state ──
+let board, piece, pieceX, pieceY, pieceColor;
+let nextShape, nextColor;
+let score, lines, level;
+let gameOver, paused;
+let dropInterval;
+let dropTimerId, timeTimerId;
+let invisiAge = null;
+let comboCount = 0;
+let bounceUp = false;
+let timeLeft = 0;
+
+function applyMode(m) {
+  let cols = 10, rows = 20, sz = 30;
+  if (m.bigboard)   { cols = 15; rows = 25; sz = 24; }
+  if (m.narrow)     { cols = 6;  rows = 20; sz = 30; }
+  return { cols, rows, sz };
+}
+
+function rotate(shape) {
+  const h = shape.length, w = shape[0].length;
+  const r = Array.from({length:w}, () => Array(h).fill(0));
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++)
+      r[x][h-1-y] = shape[y][x];
+  return r;
+}
+
+function newBoard() {
+  return Array.from({length:ROWS}, () => Array(COLS).fill(0));
+}
+
+function randomShapeIdx() {
+  const pool = currentMode.shapes || [0,1,2,3,4,5,6];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function randomColor(idx) {
+  if (currentMode.rainbow) return Math.floor(Math.random() * 7) + 1;
+  return idx + 1;
+}
+
+function spawn() {
+  if (nextShape != null) {
+    piece = nextShape;
+    pieceColor = nextColor;
+  } else {
+    const i = randomShapeIdx();
+    piece = SHAPES[i];
+    pieceColor = randomColor(i);
+  }
+  const i = randomShapeIdx();
+  nextShape = SHAPES[i];
+  nextColor = randomColor(i);
+  pieceX = Math.floor((COLS - piece[0].length) / 2);
+  pieceY = 0;
+  if (!valid(piece, pieceX, pieceY)) {
+    gameOver = true;
+    showOverlay('游戏结束！按Enter重新开始');
+    stopAllTimers();
+  }
+}
+
+function valid(shape, ox, oy) {
+  if (!shape) return false;
+  for (let y = 0; y < shape.length; y++)
+    for (let x = 0; x < shape[y].length; x++)
+      if (shape[y][x]) {
+        const nx = ox + x, ny = oy + y;
+        if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
+        if (ny >= 0 && board[ny][nx] !== 0) return false;
+      }
+  return true;
+}
+
+function place() {
+  for (let y = 0; y < piece.length; y++)
+    for (let x = 0; x < piece[y].length; x++)
+      if (piece[y][x]) {
+        const ny = pieceY + y, nx = pieceX + x;
+        if (ny < 0) { gameOver = true; showOverlay('游戏结束！'); stopAllTimers(); return; }
+        board[ny][nx] = pieceColor;
+        if (invisiAge) invisiAge[ny][nx] = 0;
+      }
+  // bomb: clear 3x3 around placed red blocks (pieceColor===1)
+  if (currentMode.bombs && pieceColor === 1) {
+    for (let y = 0; y < piece.length; y++)
+      for (let x = 0; x < piece[y].length; x++)
+        if (piece[y][x])
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++) {
+              const by = pieceY + y + dy, bx = pieceX + x + dx;
+              if (by>=0 && by<ROWS && bx>=0 && bx<COLS) board[by][bx] = 0;
+            }
+  }
+  clearLines();
+  if (currentMode.bounce) { bounceUp = true; return; }
+  spawn();
+}
+
+function clearLines() {
+  let cleared = 0;
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r].every(c => c !== 0)) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(0));
+      if (invisiAge) { invisiAge.splice(r,1); invisiAge.unshift(Array(COLS).fill(-1)); }
+      cleared++;
+      r++;
+    }
+  }
+  if (cleared) {
+    if (currentMode.combo) comboCount++;
+    else comboCount = 0;
+    const mul = currentMode.combo ? comboCount : 1;
+    score += [0,100,300,500,800][cleared] * level * mul;
+    lines += cleared;
+    level = Math.floor(lines / 10) + 1;
+    updateSpeed();
+  }
+  updateUI();
+}
+
+function updateSpeed() {
+  dropInterval = Math.max(40, currentMode.baseSpeed - (level-1) * currentMode.speedDec);
+  if (currentMode.doublespeed && lines > 0 && lines % 10 === 0)
+    dropInterval = Math.max(40, Math.floor(dropInterval / 2));
+  restartDropTimer();
+}
+
+function updateUI() {
+  scoreEl.textContent = score;
+  linesEl.textContent = lines;
+  levelEl.textContent = level;
+}
+
+function showOverlay(msg) {
+  overlayMsg.textContent = msg;
+  overlayMsg.style.display = 'block';
+  setTimeout(() => { overlayMsg.style.display = 'none'; }, 2500);
+}
+
+// ── movement ──
+function moveDown() {
+  if (gameOver || paused) return;
+  if (valid(piece, pieceX, pieceY + 1)) { pieceY++; }
+  else place();
+}
+
+function moveLeft() {
+  if (gameOver || paused) return;
+  if (currentMode.ice) while(valid(piece, pieceX-1, pieceY)) pieceX--;
+  else if (valid(piece, pieceX-1, pieceY)) pieceX--;
+}
+
+function moveRight() {
+  if (gameOver || paused) return;
+  if (currentMode.ice) while(valid(piece, pieceX+1, pieceY)) pieceX++;
+  else if (valid(piece, pieceX+1, pieceY)) pieceX++;
+}
+
+function hardDrop() {
+  if (gameOver || paused) return;
+  while (valid(piece, pieceX, pieceY + 1)) pieceY++;
+  place();
+}
+
+function rotatePiece() {
+  if (gameOver || paused || currentMode.norotate) return;
+  if (currentMode.scramble && Math.random() < 0.3) {
+    const i = randomShapeIdx();
+    piece = SHAPES[i];
+    pieceColor = currentMode.rainbow ? Math.floor(Math.random()*7)+1 : i+1;
+    return;
+  }
+  const rot = rotate(piece);
+  if (valid(rot, pieceX, pieceY)) { piece = rot; return; }
+  for (const ox of [-1, 1, -2, 2]) {
+    if (valid(rot, pieceX + ox, pieceY)) { piece = rot; pieceX += ox; return; }
+  }
+}
+
+// ── lucky ──
+const LUCKY = [
+  { name:'消除一行', act(){ for(let r=ROWS-1;r>=0;r--) if(board[r].some(c=>c)){ board.splice(r,1); board.unshift(Array(COLS).fill(0)); score+=50; return; } } },
+  { name:'减速', act(){ dropInterval=Math.min(1500,dropInterval+300); restartDropTimer(); } },
+  { name:'+300分', act(){ score+=300; } },
+];
+
+function triggerLucky() {
+  const p = LUCKY[Math.floor(Math.random()*LUCKY.length)];
+  p.act();
+  powerupInd.textContent = '✦ ' + p.name;
+  setTimeout(() => { powerupInd.textContent = ''; }, 1800);
+  updateUI();
+}
+
+// ── drawing ──
+function drawBlock(c, x, y, clr, alpha, sz) {
+  if (alpha === undefined) alpha = 1;
+  if (sz === undefined) sz = BLOCK;
+  const px = x * sz, py = y * sz;
+  c.globalAlpha = alpha;
+  c.fillStyle = COLORS[clr];
+  c.fillRect(px + 1, py + 1, sz - 2, sz - 2);
+  c.fillStyle = 'rgba(255,255,255,0.12)';
+  c.fillRect(px + 1, py + 1, sz - 2, 3);
+  c.fillRect(px + 1, py + 1, 3, sz - 2);
+  c.fillStyle = 'rgba(0,0,0,0.2)';
+  c.fillRect(px + 1, py + sz - 5, sz - 2, 4);
+  c.fillRect(px + sz - 5, py + 1, 4, sz - 2);
+  c.globalAlpha = 1;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // board
+  if (currentMode.dark) {
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++)
+        if (board[y][x]) {
+          const d = Math.abs(x-pieceX) + Math.abs(y-pieceY);
+          if (d <= 3) drawBlock(ctx, x, y, board[y][x]);
+          else { ctx.fillStyle='rgba(40,40,60,0.25)'; ctx.fillRect(x*BLOCK+2,y*BLOCK+2,BLOCK-4,BLOCK-4); }
+        }
+  } else if (currentMode.invisible && invisiAge) {
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++)
+        if (board[y][x]) {
+          const age = invisiAge[y][x];
+          let a = 1;
+          if (age >= 0) {
+            if (age < 30) a = 1;
+            else if (age < 210) a = 1 - (age-30)/180;
+            else a = 0;
+          }
+          if (a > 0.005) drawBlock(ctx, x, y, board[y][x], a);
+        }
+  } else {
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++)
+        if (board[y][x]) drawBlock(ctx, x, y, board[y][x]);
+  }
+
+  // ghost (skip for bounce-up phase)
+  if (!bounceUp) {
+    let gy = pieceY;
+    while (valid(piece, pieceX, gy + 1)) gy++;
+    for (let y = 0; y < piece.length; y++)
+      for (let x = 0; x < piece[y].length; x++)
+        if (piece[y][x]) {
+          ctx.fillStyle = 'rgba(255,255,255,0.06)';
+          ctx.fillRect((pieceX+x)*BLOCK+1, (gy+y)*BLOCK+1, BLOCK-2, BLOCK-2);
+        }
+  }
+
+  // current piece
+  if (piece) {
+    for (let y = 0; y < piece.length; y++)
+      for (let x = 0; x < piece[y].length; x++)
+        if (piece[y][x]) drawBlock(ctx, pieceX+x, pieceY+y, pieceColor);
+  }
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= COLS; x++) { ctx.beginPath(); ctx.moveTo(x*BLOCK,0); ctx.lineTo(x*BLOCK,ROWS*BLOCK); ctx.stroke(); }
+  for (let y = 0; y <= ROWS; y++) { ctx.beginPath(); ctx.moveTo(0,y*BLOCK); ctx.lineTo(COLS*BLOCK,y*BLOCK); ctx.stroke(); }
+
+  // next piece preview
+  nctx.clearRect(0, 0, ncanvas.width, ncanvas.height);
+  if (nextShape) {
+    const nw = nextShape[0].length, nh = nextShape.length;
+    const s = 22;
+    const ox = (ncanvas.width - nw*s)/2, oy = (ncanvas.height - nh*s)/2;
+    for (let y=0; y<nh; y++)
+      for (let x=0; x<nw; x++)
+        if (nextShape[y][x]) {
+          nctx.fillStyle = COLORS[nextColor];
+          nctx.fillRect(ox+x*s+1, oy+y*s+1, s-2, s-2);
+          nctx.fillStyle='rgba(255,255,255,0.12)';
+          nctx.fillRect(ox+x*s+1, oy+y*s+1, s-2, 3);
+          nctx.fillRect(ox+x*s+1, oy+y*s+1, 3, s-2);
+        }
+  }
+}
+
+// ── timers ──
+function startDropTimer() {
+  stopDropTimer();
+  dropTimerId = setInterval(() => {
+    if (gameOver || paused) return;
+    if (invisiAge) ageInvisiBlocks();
+    if (currentMode.bounce && bounceUp) {
+      if (valid(piece, pieceX, pieceY - 1)) pieceY--;
+      else { bounceUp = false; if (valid(piece, pieceX, pieceY+1)) pieceY++; else { spawn(); bounceUp = false; } }
+    } else {
+      moveDown();
+    }
+    draw();
+  }, dropInterval);
+}
+
+function stopDropTimer() {
+  if (dropTimerId != null) { clearInterval(dropTimerId); dropTimerId = null; }
+}
+
+function restartDropTimer() { stopDropTimer(); startDropTimer(); }
+
+function ageInvisiBlocks() {
+  for (let y = 0; y < ROWS; y++)
+    for (let x = 0; x < COLS; x++)
+      if (invisiAge[y][x] >= 0) invisiAge[y][x]++;
+}
+
+function startTimeTimer() {
+  stopTimeTimer();
+  timeLeft = currentMode.timed || 120;
+  timerPanel.style.display = 'block';
+  timerEl.textContent = timeLeft;
+  timerEl.style.color = '#f5c542';
+  timeTimerId = setInterval(() => {
+    if (gameOver || paused) return;
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    if (timeLeft <= 10) timerEl.style.color = '#e94560';
+    if (timeLeft <= 0) { gameOver = true; showOverlay('时间到！得分: '+score); stopAllTimers(); }
+  }, 1000);
+}
+
+function stopTimeTimer() {
+  if (timeTimerId != null) { clearInterval(timeTimerId); timeTimerId = null; }
+  timerPanel.style.display = 'none';
+  timerEl.style.color = '#f5c542';
+}
+
+function stopAllTimers() {
+  stopDropTimer();
+  stopTimeTimer();
+}
+
+// ── obsctacle ──
+function addObstacles(n) {
+  for (let i = 0; i < n; i++) {
+    let tries = 20;
+    while (tries-- > 0) {
+      const x = Math.floor(Math.random() * COLS);
+      const y = 2 + Math.floor(Math.random() * (ROWS - 4));
+      if (board[y][x] === 0) { board[y][x] = 8; break; }
+    }
+  }
+}
+
+// ── start / reset ──
+let currentMode = MODES[0];
+
+function start() {
+  stopAllTimers();
+  const cfg = applyMode(currentMode);
+  COLS = cfg.cols; ROWS = cfg.rows; BLOCK = cfg.sz;
+  canvas.width = COLS * BLOCK;
+  canvas.height = ROWS * BLOCK;
+
+  board = newBoard();
+  score = 0; lines = 0; level = 1; comboCount = 0; bounceUp = false;
+  dropInterval = currentMode.baseSpeed;
+  gameOver = false; paused = false;
+  nextShape = null; nextColor = 0;
+  invisiAge = currentMode.invisible ? Array.from({length:ROWS}, () => Array(COLS).fill(-1)) : null;
+  powerupInd.textContent = '';
+  pauseBtn.textContent = '暂停 (P)';
+  overlayMsg.style.display = 'none';
+  updateUI();
+  spawn();
+
+  if (currentMode.timed) startTimeTimer();
+  else stopTimeTimer();
+
+  if (currentMode.obstacles) addObstacles(10);
+
+  startDropTimer();
+}
+
+function switchMode(id) {
+  currentMode = MODES.find(m => m.id === id);
+  modeDescEl.textContent = currentMode.desc;
+  start();
+}
+
+// ── event handlers ──
+modeSelect.addEventListener('change', () => switchMode(+modeSelect.value));
+modeSelect.value = '0';
+modeDescEl.textContent = MODES[0].desc;
+
+document.getElementById('restartBtn').addEventListener('click', start);
+
+document.addEventListener('keydown', e => {
+  if (gameOver) {
+    if (e.key === 'Enter') { e.preventDefault(); start(); }
+    return;
+  }
+  if (paused && e.key !== 'p' && e.key !== 'P') return;
+
+  switch (e.key) {
+    case 'ArrowLeft':  e.preventDefault(); currentMode.mirror ? moveRight() : moveLeft(); break;
+    case 'ArrowRight': e.preventDefault(); currentMode.mirror ? moveLeft() : moveRight(); break;
+    case 'ArrowDown':  e.preventDefault(); moveDown(); if (currentMode.lucky && Math.random()<0.1) triggerLucky(); break;
+    case 'Enter':      e.preventDefault(); rotatePiece(); break;
+    case 'ArrowUp':    e.preventDefault(); hardDrop(); if (currentMode.lucky && Math.random()<0.25) triggerLucky(); break;
+    case 'p': case 'P': togglePause(); break;
+  }
+  draw();
+});
+
+function togglePause() {
+  if (gameOver) return;
+  paused = !paused;
+  pauseBtn.textContent = paused ? '继续 (P)' : '暂停 (P)';
+  if (paused) { overlayMsg.textContent = '已暂停'; overlayMsg.style.display = 'block'; }
+  else overlayMsg.style.display = 'none';
+}
+
+pauseBtn.addEventListener('click', togglePause);
+
+// ── init ──
+start();
+</script>
+</body>
+</html>
