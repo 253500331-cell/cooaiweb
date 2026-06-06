@@ -176,7 +176,7 @@
 
 <script>
 // ── constants ──
-let COLS = 10, ROWS = 15, BLOCK = 30;
+let COLS = 10, ROWS = 12, BLOCK = 30;
 const COLORS = ['#111','#e94560','#f5c542','#4ecca3','#3498db','#9b59b6','#e67e22','#2ecc71','#888'];
 const SHAPES = [
   [[1,1,1,1]],                   // I
@@ -200,7 +200,7 @@ const MODES = [
   { id:7,  name:'突变模式',     desc:'方块可能随机变形状',    baseSpeed:800,  speedDec:60, scramble:true },
   { id:8,  name:'冰面模式',     desc:'左右移动直接滑到底',    baseSpeed:800,  speedDec:60, ice:true },
   { id:9,  name:'左右反转',     desc:'方向键左右互换',        baseSpeed:800,  speedDec:60, mirror:true },
-  { id:10, name:'大棋盘',       desc:'15x20超大棋盘',         baseSpeed:800,  speedDec:60, bigboard:true },
+  { id:10, name:'大棋盘',       desc:'15x16超大棋盘',         baseSpeed:800,  speedDec:60, bigboard:true },
   { id:11, name:'窄棋盘',       desc:'6列窄小棋盘',           baseSpeed:800,  speedDec:60, narrow:true },
   { id:12, name:'计时挑战',     desc:'2分钟刷最高分',         baseSpeed:700,  speedDec:50, timed:120 },
   { id:13, name:'极简模式',     desc:'只用O和I方块',          baseSpeed:800,  speedDec:60, shapes:[0,1] },
@@ -250,8 +250,8 @@ let timeLeft = 0;
 
 function applyMode(m) {
   let cols = 10, rows = 20, sz = 30;
-  if (m.bigboard)   { cols = 15; rows = 20; sz = 24; }
-  if (m.narrow)     { cols = 6;  rows = 20; sz = 30; }
+  if (m.bigboard)   { cols = 15; rows = 16; sz = 24; }
+  if (m.narrow)     { cols = 6;  rows = 12; sz = 30; }
   return { cols, rows, sz };
 }
 
