@@ -43,6 +43,10 @@
     margin-bottom: 8px;
     color: #a0a0b0;
   }
+  .row-panel {
+    display: flex;
+    gap: 10px;
+  }
   #scoreVal, #linesVal, #levelVal, #timerVal {
     font-size: 26px;
     font-weight: bold;
@@ -151,24 +155,25 @@
       <h3>分数</h3>
       <div id="scoreVal">0</div>
     </div>
-    <div class="panel">
-      <h3>行数</h3>
-      <div id="linesVal">0</div>
-    </div>
-    <div class="panel">
-      <h3>等级</h3>
-      <div id="levelVal">1</div>
+    <div class="row-panel">
+      <div class="panel" style="flex:1;">
+        <h3>行数</h3>
+        <div id="linesVal">0</div>
+      </div>
+      <div class="panel" style="flex:1;">
+        <h3>等级</h3>
+        <div id="levelVal">1</div>
+      </div>
+      <div class="panel controls" style="flex:2;">
+        <h3>操作</h3>
+        <div style="font-size:10px;"><kbd>←</kbd><kbd>→</kbd>移动 <kbd>↓</kbd>落 <kbd>空格</kbd>变 <kbd>↑</kbd>底</div>
+        <button class="btn" id="pauseBtn" style="margin-top:4px; padding:4px 0; font-size:11px;">暂停(P)</button>
+        <button class="btn secondary" id="restartBtn" style="padding:4px 0; font-size:11px;">重开</button>
+      </div>
     </div>
     <div class="panel" id="timerPanel" style="display:none;">
       <h3>剩余时间</h3>
       <div id="timerVal">120</div>
-    </div>
-    <div class="panel controls">
-      <h3>操作</h3>
-      <div><kbd>←</kbd><kbd>→</kbd> 移动 &nbsp; <kbd>↓</kbd> 下落</div>
-      <div><kbd>空格</kbd> 变形 &nbsp; <kbd>↑</kbd> 落底</div>
-      <button class="btn" id="pauseBtn">暂停 (P)</button>
-      <button class="btn secondary" id="restartBtn">重新开始</button>
     </div>
   </div>
 </div>
