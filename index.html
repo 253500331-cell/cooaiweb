@@ -448,14 +448,18 @@ function toggleP(){
 // ═══════════════════════ LOGIN / LOBBY (inline)
 let curUser='';
 const uInp=document.getElementById('userInp'),uSt=document.getElementById('userSt');
-uInp.addEventListener('input',()=>{
+let composing=false;
+uInp.addEventListener('compositionstart',()=>{composing=true;});
+uInp.addEventListener('compositionend',()=>{composing=false;handleInput();});
+uInp.addEventListener('input',()=>{if(!composing)handleInput();});
+function handleInput(){
   const v=uInp.value.trim();
-  if(!v){uSt.textContent='游客模式 · 不记录分数';uSt.style.color='';curUser='';upUi();renderLb();return;}
-  if(!/^[\w\u4e00-\u9fa5]{2,8}$/.test(v)){uSt.textContent='2-8位中英文字或数字';uSt.style.color='var(--a)';return;}
+  if(!v){uSt.textContent='游客模式 · 不记录分数';uSt.style.color='#8888aa';curUser='';upUi();renderLb();return;}
+  if(!/^[\w\u4e00-\u9fa5]{2,8}$/.test(v)||v.length<2){uSt.textContent='2-8位中英文字或数字';uSt.style.color='#ff4444';return;}
   const a=LS.acc(v);
   if(a){uSt.textContent='欢迎回来！最高分: '+a.bs+' | '+rankN(a.exp);uSt.style.color='#4ecca3';}
-  else{uSt.textContent='新玩家，输入回车创建';uSt.style.color='var(--g)';}
-});
+  else{uSt.textContent='新玩家，按回车创建';uSt.style.color='#f5c542';}
+}
 uInp.addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault();const v=uInp.value.trim();if(!v||!/^[\w\u4e00-\u9fa5]{2,8}$/.test(v))return;let a=LS.acc(v);if(!a){a={n:v,bs:0,bl:0,bd:'',tl:0,tg:0,exp:0,ac:[],sk:'default',md:[],sc:1};LS.save(v,a);}curUser=v;uSt.textContent='已登录: '+v+' | '+rankN(a.exp);uSt.style.color='#4ecca3';applySkin(a.sk||'default');upUi();renderLb();renderSkin();updateAchBtn();}
 });
