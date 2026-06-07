@@ -247,18 +247,18 @@ function countC(s,ox,oy){let c=0;const mx=ox+s[0].length-1,my=oy+s.length-1;cons
 function isTS(s,ox,oy,lr){if(!lr)return 0;if(s.length!==3||s[0].length!==3||!s[1][1])return 0;const c=countC(s,ox,oy);return c>=3?2:c===2?1:0;}
 
 // ═══════════════════════ GAME STATE
-let G={bd:[],pc:null,px:0,py:0,pc:1,rot:0,hd:null,hc:0,hu:false,bg:[],ns:[],nc:[],sc:0,ln:0,lv:1,cb:-1,mc:0,tt:0,ts:0,ac:0,bb:0,mb:0,ps:false,go:false,di:800,lt:0,lm:0,dt:null,ttm:null,tl:0,el:0,etm:null,lr:false,md:MODES[0],ds:{d:0,t:0,a:false},spt:0,aiBd:null,aiL:0,aiPc:null,aiX:0,aiY:0,aiC:0,aiBg:[],chT:null,chE:null,pz:[],pzS:0};
+let G={bd:[],pc:null,px:0,py:0,cp:1,rot:0,hd:null,hc:0,hu:false,bg:[],ns:[],nc:[],sc:0,ln:0,lv:1,cb:-1,mc:0,tt:0,ts:0,ac:0,bb:0,mb:0,ps:false,go:false,di:800,lt:0,lm:0,dt:null,ttm:null,tl:0,el:0,etm:null,lr:false,md:MODES[0],ds:{d:0,t:0,a:false},spt:0,aiBd:null,aiL:0,aiPc:null,aiX:0,aiY:0,aiC:0,aiBg:[],chT:null,chE:null,pz:[],pzS:0};
 
 function nbd(){return Array.from({length:ROWS},()=>Array(COLS).fill(0));}
 function sp(){
   if(G.ns.length===0){G.ns.push(nb());G.nc.push(G.ns[0]+1);}
-  G.pc=SHP[G.ns.shift()];G.pc=G.nc.shift()||(G.ns[0]?G.ns[0]+1:1);
+  G.pc=SHP[G.ns.shift()];G.cp=G.nc.shift()||(G.ns[0]?G.ns[0]+1:1);
   G.rot=0;while(G.ns.length<6){G.ns.push(nb());G.nc.push(G.ns[G.ns.length-1]+1);}
   G.px=Math.floor((COLS-G.pc[0].length)/2);G.py=0;G.hu=false;G.lr=false;ldr();
   if(!vd(G.pc,G.px,G.py)){if(G.md.zn){G.bd=nbd();sp();return;}end();}
 }
 function pl(){
-  for(let y=0;y<G.pc.length;y++)for(let x=0;x<G.pc[y].length;x++)if(G.pc[y][x]){const ny=G.py+y;if(ny<0){end();return;}if(ny<ROWS)G.bd[ny][G.px+x]=G.pc;}
+   for(let y=0;y<G.pc.length;y++)for(let x=0;x<G.pc[y].length;x++)if(G.pc[y][x]){const ny=G.py+y;if(ny<0){end();return;}if(ny<ROWS)G.bd[ny][G.px+x]=G.cp;}
   cl();if(G.md.co&&G.cb<=0){end();return;}if(G.md.sp&&G.ln>=G.md.sp){end();return;}sp();
 }
 function cl(){
@@ -292,7 +292,7 @@ function mvL(){if(!G.ps&&vd(G.pc,G.px-1,G.py)){G.px--;ldr();G.lr=false;sfxMv();}
 function mvR(){if(!G.ps&&vd(G.pc,G.px+1,G.py)){G.px++;ldr();G.lr=false;sfxMv();}}
 function hdD(){if(G.ps)return;let d=0;while(vd(G.pc,G.px,G.py+1)){G.py++;d++;}G.sc+=d*2;sfxHd();pl();}
 function rtA(){if(G.ps)return;const r=tryRot(G.pc,G.px,G.py,1);if(r){G.pc=r.sh;G.px+=r.dx;G.py+=r.dy;G.rot=r.rt;ldr();G.lr=true;sfxRt();}}
-function hdA(){if(G.ps||G.hu)return;if(G.hd!=null){const t=G.pc,tc=G.pc,tr=G.rot;G.pc=G.hd;G.pc=G.hc;G.rot=0;G.px=Math.floor((COLS-G.pc[0].length)/2);G.py=0;G.hd=t;G.hc=tc;}else{G.hd=G.pc;G.hc=G.pc;sp();}G.hu=true;ldr();sfxRt();}
+function hdA(){if(G.ps||G.hu)return;if(G.hd!=null){const t=G.pc,tc=G.cp,tr=G.rot;G.pc=G.hd;G.cp=G.hc;G.rot=0;G.px=Math.floor((COLS-G.pc[0].length)/2);G.py=0;G.hd=t;G.hc=tc;}else{G.hd=G.pc;G.hc=G.cp;sp();}G.hu=true;ldr();sfxRt();}
 function lo(){const n=performance.now();if(n-G.lt>500&&G.lm>=15){pl();return;}if(n-G.lt>500)pl();}
 
 // ── AI ──
