@@ -54,6 +54,10 @@ canvas#g{display:block;border:2px solid var(--b);border-radius:6px;background:va
   <!-- LEFT SIDEBAR -->
   <div class="side side-l">
     <div class="sp">
+      <h4>排行榜</h4>
+      <div class="lb"><table id="lbTable"><thead><tr><th>#</th><th>玩家</th><th>分</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="sp">
       <h4>玩家</h4>
       <input id="userInp" placeholder="用户名(可留空)" maxlength="8" autocomplete="off">
       <div class="sm" id="userSt">游客模式 · 不记录分数</div>
@@ -67,10 +71,6 @@ canvas#g{display:block;border:2px solid var(--b);border-radius:6px;background:va
       <div class="hold"><canvas id="holdCvs" width="60" height="60"></canvas></div>
     </div>
     <div class="sp">
-      <h4>排行榜</h4>
-      <div class="lb"><table id="lbTable"><thead><tr><th>#</th><th>玩家</th><th>分</th></tr></thead><tbody></tbody></table></div>
-    </div>
-    <div class="sp">
       <h4>皮肤</h4>
       <div class="skins" id="skinDots"></div>
     </div>
@@ -79,7 +79,7 @@ canvas#g{display:block;border:2px solid var(--b);border-radius:6px;background:va
   <!-- CENTER: GAME CANVAS -->
   <div style="position:relative;">
     <canvas id="g"></canvas>
-    <div class="combo" id="comboInd" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);">-</div>
+    <div class="combo" id="comboInd" style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);">COMBO ×0</div>
   </div>
 
   <!-- RIGHT SIDEBAR -->
@@ -96,7 +96,7 @@ canvas#g{display:block;border:2px solid var(--b);border-radius:6px;background:va
       <h4>操作</h4>
       <div style="font-size:9px;color:var(--d);line-height:1.6;">
         ← → 移动 · ↓ 软降<br>
-        空格 硬降 · ↑ 变形<br>
+        空格 变形 · ↑ 硬降<br>
         C 暂存 · P 暂停
       </div>
     </div>
@@ -307,7 +307,7 @@ function aiPl(){for(let r=0;r<G.aiPc.length;r++)for(let c=0;c<G.aiPc[r].length;c
 // ═══════════════════════ UI
 function upUi(){
   gS.textContent=G.sc;gL.textContent=G.ln;gV.textContent=G.lv;
-  gC.textContent=G.cb>0?'×'+G.cb:'-';
+  gC.textContent=G.cb>0?'COMBO ×'+G.cb:'COMBO ×0';
   gC.style.fontSize=G.cb>=5?'32px':'24px';
   if(curUser){const a=LS.acc(curUser);if(a){gE.textContent=a.exp||0;gR.textContent=rankN(a.exp);}}
 }
@@ -422,8 +422,8 @@ document.addEventListener('keydown',e=>{
     case 'ArrowLeft':e.preventDefault();mvL();G.ds.d=-1;G.ds.t=performance.now()+150;G.ds.a=false;break;
     case 'ArrowRight':e.preventDefault();mvR();G.ds.d=1;G.ds.t=performance.now()+150;G.ds.a=false;break;
     case 'ArrowDown':e.preventDefault();mvD();break;
-    case 'ArrowUp':e.preventDefault();rtA();break;
-    case ' ':e.preventDefault();hdD();break;
+    case 'ArrowUp':e.preventDefault();hdD();break;
+    case ' ':e.preventDefault();rtA();break;
     case 'c':case 'C':e.preventDefault();hdA();break;
     case 'p':case 'P':e.preventDefault();toggleP();break;
   }
